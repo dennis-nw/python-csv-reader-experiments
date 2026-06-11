@@ -1,0 +1,36 @@
+import time
+import tracemalloc
+from collections import defaultdict
+
+import pandas as pd
+
+FILE = "data.csv"
+CHUNK_SIZE = 50_000
+
+
+def main():
+    t0 = time.perf_counter()
+
+    tracemalloc.start()
+
+    totals = defaultdict(float)
+
+    for chunk in pd.read_csv(FILE, chunksize=CHUNK_SIZE):
+        group = chunk.groupby("category")["amount"].sum()
+        for category, total in group.items():
+            totals[category] += total
+
+    elapsed = time.perf_counter() - t0
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    print("Result:")
+    for category, total in sorted(totals.items()):
+        print(f"  {category}: {total:,.2f}")
+    print(f"\nWall time : {elapsed:.2f}s")
+    print(f"Peak memory: {peak / 1024 / 1024:.1f} MB")
+
+
+if __name__ == "__main__":
+    print("Starting streaming apprach with pandas...")
+    main()
